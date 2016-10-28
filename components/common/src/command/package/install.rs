@@ -49,14 +49,16 @@ use hcore::package::{Identifiable, PackageArchive, PackageIdent, PackageInstall}
 use error::{Error, Result};
 use ui::{Status, UI};
 
+use retry::retry;
+
 pub fn start<P1: ?Sized, P2: ?Sized>(ui: &mut UI,
-                                                 url: &str,
-                                                 ident_or_archive: &str,
-                                                 product: &str,
-                                                 version: &str,
-                                                 fs_root_path: &P1,
-                                                 cache_artifact_path: &P2)
-                                                 -> Result<PackageIdent>
+                                     url: &str,
+                                     ident_or_archive: &str,
+                                     product: &str,
+                                     version: &str,
+                                     fs_root_path: &P1,
+                                     cache_artifact_path: &P2)
+                                     -> Result<PackageIdent>
     where P1: AsRef<Path>,
           P2: AsRef<Path>
 {
@@ -176,7 +178,15 @@ impl<'a> InstallTask<'a> {
             debug!("Found {} in artifact cache, skipping remote download",
                    &ident);
         } else {
-            try!(self.fetch_artifact(ui, &ident, src_path));
+            if retry(5,
+                     3000,
+                     || self.fetch_artifact(ui, &ident, src_path),
+                     |res| res.is_ok())
+                .is_err() {
+                return Err(Error::DownloadError("We tried to download 5 times and were \
+                                                 unsuccessful. Giving up."
+                    .to_string()));
+            }
         }
 
         let mut artifact = PackageArchive::new(try!(self.cached_artifact_path(&ident)));
