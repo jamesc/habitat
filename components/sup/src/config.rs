@@ -123,6 +123,8 @@ pub struct Config {
     key: String,
     email: Option<String>,
     expire_days: Option<u16>,
+    swim_listen: String,
+    gossip_listen: String,
     gossip_listen_ip: String,
     gossip_listen_port: u16,
     http_listen_ip: String,
@@ -320,6 +322,24 @@ impl Config {
     /// Return the topology
     pub fn topology(&self) -> &Topology {
         &self.topology
+    }
+
+    pub fn set_swim_listen(&mut self, swim_listen: String) -> &mut Config {
+        self.swim_listen = swim_listen;
+        self
+    }
+
+    pub fn swim_listen(&self) -> &str {
+        &self.swim_listen
+    }
+
+    pub fn gossip_listen(&self) -> &str {
+        &self.swim_listen
+    }
+
+    pub fn set_gossip_listen(&mut self, gossip_listen: String) -> &mut Config {
+        self.gossip_listen = gossip_listen;
+        self
     }
 
     pub fn gossip_listen_ip(&self) -> &str {

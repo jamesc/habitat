@@ -204,7 +204,7 @@ impl Package {
     fn remove_symlink<P: AsRef<Path>>(p: P) -> Result<()> {
         let p = p.as_ref();
         if !p.exists() {
-            return Ok(())
+            return Ok(());
         }
         // note: we're NOT using p.metadata() here as that will follow the
         // symlink, which returns smd.file_type().is_symlink() == false in all cases.
@@ -249,10 +249,8 @@ impl Package {
     }
 
     pub fn config_from(&self) -> PathBuf {
-        gconfig().config_from().as_ref().map_or(
-            self.pkg_install.installed_path().clone(),
-            |p| PathBuf::from(p)
-        )
+        gconfig().config_from().as_ref().map_or(self.pkg_install.installed_path().clone(),
+                                                |p| PathBuf::from(p))
     }
 
     /// Return an iterator of the configuration file names to render.

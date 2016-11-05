@@ -139,7 +139,6 @@ impl RuntimeConfig {
     }
 }
 
-
 #[derive(Debug)]
 pub struct Supervisor {
     pub pid: Option<Pid>,

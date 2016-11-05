@@ -39,6 +39,7 @@
 //! * [The Habitat Command Line Reference](command)
 //! * [The Habitat Supervisor Sidecar; http interface to promises](sidecar)
 
+extern crate habitat_butterfly as butterfly;
 extern crate habitat_core as hcore;
 extern crate habitat_common as common;
 extern crate habitat_depot_client as depot_client;
@@ -277,6 +278,7 @@ pub mod census;
 pub mod gossip;
 pub mod election;
 pub mod supervisor;
+pub mod manager;
 
 use std::env;
 use std::path::PathBuf;

@@ -140,4 +140,3 @@ pub fn group_name_to_gid(group: &str) -> Option<u32> {
 pub fn get_user_and_group(pkg_install: &PackageInstall) -> Result<(String, String)> {
     unimplemented!();
 }
-
