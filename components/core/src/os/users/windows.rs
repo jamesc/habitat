@@ -18,12 +18,19 @@ extern "C" {
     pub fn GetUserTokenStatus() -> u32;
 }
 
-pub fn get_uid_by_name(owner: &str) -> Option<u32> {
-    unimplemented!();
+fn get_sid_by_name(name: &str) -> Option<String> {
+  match Account::from_name(name) {
+    Some(acct) => Some(acct.sid.to_string()),
+    None => None
+  }
 }
 
-pub fn get_gid_by_name(group: &str) -> Option<u32> {
-    unimplemented!();
+pub fn get_uid_by_name(owner: &str) -> Option<String> {
+  get_sid_by_name(owner)
+}
+
+pub fn get_gid_by_name(group: &str) -> Option<String> {
+  get_sid_by_name(owner)
 }
 
 pub fn get_current_username() -> Option<String> {
