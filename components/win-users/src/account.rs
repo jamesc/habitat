@@ -16,8 +16,8 @@ use std::ptr::null_mut;
 use std::io::Error;
 
 use widestring::WideCString;
-use winapi::{LPCWSTR, BOOL, PSID, PSID_NAME_USE, LPDWORD};
-use winapi::winerror;
+use winapi::{LPCWSTR, BOOL, PSID, PSID_NAME_USE, LPDWORD, SID_NAME_USE};
+use winapi::winerror::*;
 
 use super::sid::Sid;
 
@@ -33,7 +33,7 @@ pub struct Account {
   pub name: String,
   pub system_name: Option<String>,
   pub domain: String,
-  pub account_type: PSID_NAME_USE,
+  pub account_type: SID_NAME_USE,
   pub sid: Sid
 }
 
@@ -50,15 +50,14 @@ impl Account {
 fn lookup_account(name: String, system_name: Option<String>) -> Option<Account> {
   let mut sid_size: u32 = 0;
   let mut domain_size: u32 = 0;
-  let wide = WideCString::from_str(name).unwrap();
+  let wide = WideCString::from_str(name.clone()).unwrap();
   unsafe {
     LookupAccountNameW(null_mut(), wide.as_ptr(), null_mut(), &mut sid_size as LPDWORD, null_mut(), &mut domain_size as LPDWORD, null_mut())
   };
-  match Error::last_os_error().raw_os_error() {
-      Some(ERROR_INSUFFICIENT_BUFFER) => {}
-      Some(ERROR_NONE_MAPPED) => return None
-      Some(err) => panic!("Error while looking up account for {}: {}", name, Error::last_os_error()),
-      None => {} //this will never happen
+  match Error::last_os_error().raw_os_error().unwrap() as u32 {
+      ERROR_INSUFFICIENT_BUFFER => {},
+      ERROR_NONE_MAPPED => return None,
+      _ => panic!("Error while looking up account for {}: {}", name, Error::last_os_error())
   }
 
   let sid: PSID = Vec::with_capacity(sid_size as usize).as_mut_ptr();
@@ -73,5 +72,5 @@ fn lookup_account(name: String, system_name: Option<String>) -> Option<Account> 
   }
 
   let domain_str = unsafe { WideCString::from_ptr_str(domain).to_string_lossy() };
-  Some(Account {name: name, system_name: system_name, domain: domain_str, account_type: sid_type, sid: Sid {raw: sid}})
+  Some(Account {name: name, system_name: system_name, domain: domain_str, account_type: unsafe { *sid_type }, sid: Sid {raw: sid}})
 }

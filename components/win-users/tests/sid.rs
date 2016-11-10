@@ -12,25 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use libc::{c_int, c_char};
-use std::ffi::CStr;
-use std::path::Path;
-use std::io;
+extern crate habitat_win_users;
 
-pub fn chown(r_path: *const c_char, uid: String, gid: String) -> c_int {
-    unimplemented!();
-}
+use habitat_win_users::account::Account;
 
-pub fn chmod(r_path: *const c_char, mode: u32) -> c_int {
-    unsafe {
-        let path = CStr::from_ptr(r_path).to_str().unwrap();
-        match Path::new(path).exists() {
-            false => 1,
-            true => 0,
-        }
-    }
-}
-
-pub fn symlink<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dst: Q) -> io::Result<()> {
-    unimplemented!();
+#[test]
+fn well_known_group_account_has_well_known_sid() {
+  let sid = Account::from_name("Everyone".to_string()).unwrap().sid;
+  assert_eq!(sid.to_string(), "S-1-1-0")
 }

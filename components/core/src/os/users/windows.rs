@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::env;
 use std::path::PathBuf;
+
+use habitat_win_users::account::*;
 
 extern "C" {
     pub fn GetUserTokenStatus() -> u32;
 }
 
 fn get_sid_by_name(name: &str) -> Option<String> {
-  match Account::from_name(name) {
+  match Account::from_name(name.to_string()) {
     Some(acct) => Some(acct.sid.to_string()),
     None => None
   }
@@ -30,11 +33,11 @@ pub fn get_uid_by_name(owner: &str) -> Option<String> {
 }
 
 pub fn get_gid_by_name(group: &str) -> Option<String> {
-  get_sid_by_name(owner)
+  get_sid_by_name(group)
 }
 
 pub fn get_current_username() -> Option<String> {
-    unimplemented!();
+    Some(env::var("USERNAME").unwrap())
 }
 
 pub fn get_current_groupname() -> Option<String> {

@@ -120,11 +120,3 @@ pub fn get_user_and_group(pkg_install: &PackageInstall) -> Result<(String, Strin
         Ok(defaults)
     }
 }
-
-pub fn user_name_to_uid(user: &str) -> Option<u32> {
-    users::get_uid_by_name(user)
-}
-
-pub fn group_name_to_gid(group: &str) -> Option<u32> {
-    users::get_gid_by_name(group)
-}
