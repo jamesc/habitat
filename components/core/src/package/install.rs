@@ -2,7 +2,6 @@ use super::{list::package_list_for_ident,
             metadata::{parse_key_value,
                        read_metafile,
                        Bind,
-                       BindMapping,
                        MetaFile,
                        PackageType},
             Identifiable,
@@ -10,6 +9,7 @@ use super::{list::package_list_for_ident,
 use crate::{error::{Error,
                     Result},
             fs};
+
 use serde_derive::{Deserialize,
                    Serialize};
 use std::{cmp::{Ordering,
@@ -209,12 +209,6 @@ impl PackageInstall {
         }
     }
 
-    /// Which services are contained in a composite package? Note that
-    /// these identifiers are *as given* in the initial `plan.sh` of
-    /// the composite, and not the fully-resolved identifiers you
-    /// would get from other "dependency" metadata files.
-    pub fn pkg_services(&self) -> Result<Vec<PackageIdent>> { self.read_deps(MetaFile::Services) }
-
     /// Constructs and returns a `HashMap` of environment variable/value key pairs of all
     /// environment variables needed to properly run a command from the context of this package.
     pub fn environment_for_command(&self) -> Result<HashMap<String, String>> {
@@ -281,30 +275,6 @@ impl PackageInstall {
                 Ok(binds)
             }
             Err(Error::MetaFileNotFound(MetaFile::BindsOptional)) => Ok(Vec::new()),
-            Err(e) => Err(e),
-        }
-    }
-
-    /// Returns the bind mappings for a composite package.
-    pub fn bind_map(&self) -> Result<HashMap<PackageIdent, Vec<BindMapping>>> {
-        match self.read_metafile(MetaFile::BindMap) {
-            Ok(body) => {
-                let mut bind_map = HashMap::new();
-                for line in body.lines() {
-                    let mut parts = line.split('=');
-                    let package = match parts.next() {
-                        Some(ident) => ident.parse()?,
-                        None => return Err(Error::MetaFileBadBind),
-                    };
-                    let binds: Result<Vec<BindMapping>> = match parts.next() {
-                        Some(binds) => binds.split(' ').map(str::parse).collect(),
-                        None => Err(Error::MetaFileBadBind),
-                    };
-                    bind_map.insert(package, binds?);
-                }
-                Ok(bind_map)
-            }
-            Err(Error::MetaFileNotFound(MetaFile::BindMap)) => Ok(HashMap::new()),
             Err(e) => Err(e),
         }
     }
@@ -588,8 +558,7 @@ impl PackageInstall {
     /// lines.
     ///
     /// In most cases, we want the identifiers to be fully qualified,
-    /// but in some cases (notably reading SERVICES from a composite
-    /// package), they do NOT need to be fully qualified.
+    /// but in some cases they do NOT need to be fully qualified.
     ///
     /// # Failures
     ///
@@ -598,16 +567,12 @@ impl PackageInstall {
     fn read_deps(&self, file: MetaFile) -> Result<Vec<PackageIdent>> {
         let mut deps: Vec<PackageIdent> = vec![];
 
-        // For now, all deps files but SERVICES need fully-qualified
-        // package identifiers
-        let must_be_fully_qualified = { file != MetaFile::Services };
-
         match self.read_metafile(file) {
             Ok(body) => {
                 if !body.is_empty() {
                     for id in body.lines() {
                         let package = PackageIdent::from_str(id)?;
-                        if !package.fully_qualified() && must_be_fully_qualified {
+                        if !package.fully_qualified() {
                             return Err(Error::FullyQualifiedPackageIdentRequired(
                                 package.to_string(),
                             ));
@@ -733,60 +698,6 @@ mod test {
         if let Err(e) = toml::ser::to_string(&cfg) {
             panic!(format!("{:?}", e));
         }
-    }
-
-    #[test]
-    fn reading_a_valid_bind_map_file_works() {
-        let fs_root = Builder::new().prefix("fs-root").tempdir().unwrap();
-        let package_install = testing_package_install("core/composite", fs_root.path());
-
-        // Create a BIND_MAP file for that package
-        let bind_map_contents = r#"
-core/foo=db:core/database fe:core/front-end be:core/back-end
-core/bar=pub:core/publish sub:core/subscribe
-        "#;
-        write_metafile(&package_install, MetaFile::BindMap, bind_map_contents);
-
-        // Grab the bind map from that package
-        let bind_map = package_install.bind_map().unwrap();
-
-        // Assert that it was interpreted correctly
-        let mut expected: HashMap<PackageIdent, Vec<BindMapping>> = HashMap::new();
-        expected.insert("core/foo".parse().unwrap(),
-                        vec!["db:core/database".parse().unwrap(),
-                             "fe:core/front-end".parse().unwrap(),
-                             "be:core/back-end".parse().unwrap(),]);
-        expected.insert("core/bar".parse().unwrap(),
-                        vec!["pub:core/publish".parse().unwrap(),
-                             "sub:core/subscribe".parse().unwrap(),]);
-
-        assert_eq!(expected, bind_map);
-    }
-
-    #[test]
-    fn reading_a_bad_bind_map_file_results_in_an_error() {
-        let fs_root = Builder::new().prefix("fs-root").tempdir().unwrap();
-        let package_install = testing_package_install("core/dud", fs_root.path());
-
-        // Create a BIND_MAP directory for that package
-        let bind_map_contents = "core/foo=db:this-is-not-an-identifier";
-        write_metafile(&package_install, MetaFile::BindMap, bind_map_contents);
-
-        // Grab the bind map from that package
-        let bind_map = package_install.bind_map();
-        assert!(bind_map.is_err());
-    }
-
-    /// Composite packages don't need to have a BIND_MAP file, and
-    /// standalone packages will never have them. This is OK.
-    #[test]
-    fn missing_bind_map_files_are_ok() {
-        let fs_root = Builder::new().prefix("fs-root").tempdir().unwrap();
-        let package_install = testing_package_install("core/no-binds", fs_root.path());
-
-        // Grab the bind map from that package
-        let bind_map = package_install.bind_map().unwrap();
-        assert!(bind_map.is_empty());
     }
 
     #[test]

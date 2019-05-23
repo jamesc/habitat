@@ -26,8 +26,6 @@ pub enum Error {
     BadBindingMode(String),
     /// An invalid path to a keyfile was given.
     BadKeyPath(String),
-    /// An operation expected a composite package
-    CompositePackageExpected(String),
     /// Error reading raw contents of configuration file.
     ConfigFileIO(PathBuf, io::Error),
     /// Parsing error while reading a configuration file.
@@ -167,9 +165,6 @@ impl fmt::Display for Error {
             Error::BadKeyPath(ref e) => {
                 format!("Invalid keypath: {}. Specify an absolute path to a file on disk.",
                         e)
-            }
-            Error::CompositePackageExpected(ref ident) => {
-                format!("The package is not a composite: {}", ident)
             }
             Error::ConfigFileIO(ref f, ref e) => {
                 format!("Error reading configuration file, {}, {}", f.display(), e)
@@ -353,7 +348,6 @@ impl error::Error for Error {
             Error::ArchiveError(ref err) => err.description(),
             Error::BadBindingMode(_) => "Unknown binding mode",
             Error::BadKeyPath(_) => "An absolute path to a file on disk is required",
-            Error::CompositePackageExpected(_) => "A composite package was expected",
             Error::ConfigFileIO(..) => "Unable to read the raw contents of a configuration file",
             Error::ConfigFileSyntax(_) => "Error parsing contents of configuration file",
             Error::ConfigInvalidArraySocketAddr(_) => {

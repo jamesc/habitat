@@ -1,6 +1,5 @@
-use crate::{error::{Error,
-                    Result},
-            package::PackageIdent};
+use crate::error::{Error,
+                   Result};
 use serde_derive::Serialize;
 use std::{self,
           collections::HashMap,
@@ -60,33 +59,6 @@ impl fmt::Display for Bind {
     }
 }
 
-/// Describes a bind mapping in a composite package.
-#[derive(Debug, PartialEq)]
-pub struct BindMapping {
-    /// The name of the bind of a given service.
-    pub bind_name: String,
-    /// The identifier of the service within the composite package
-    /// that should satisfy the named bind.
-    pub satisfying_service: PackageIdent,
-}
-
-impl FromStr for BindMapping {
-    type Err = Error;
-
-    fn from_str(line: &str) -> Result<Self> {
-        let mut parts = line.split(':');
-        let bind_name = parts.next()
-                             .and_then(|bn| Some(bn.to_string()))
-                             .ok_or(Error::MetaFileBadBind)?;
-        let satisfying_service = match parts.next() {
-            None => return Err(Error::MetaFileBadBind),
-            Some(satisfying_service) => satisfying_service.parse()?,
-        };
-        Ok(BindMapping { bind_name,
-                         satisfying_service })
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct EnvVar {
     pub key:       String,
@@ -136,7 +108,6 @@ impl IntoIterator for PkgEnv {
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum MetaFile {
-    BindMap, // Composite-only
     Binds,
     BindsOptional,
     BuildDeps,
@@ -153,10 +124,8 @@ pub enum MetaFile {
     LdRunPath,
     Manifest,
     Path,
-    ResolvedServices, // Composite-only
     RuntimeEnvironment,
     RuntimePath,
-    Services, // Composite-only
     SvcGroup,
     SvcUser,
     Target,
@@ -167,7 +136,6 @@ pub enum MetaFile {
 impl fmt::Display for MetaFile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let id = match *self {
-            MetaFile::BindMap => "BIND_MAP",
             MetaFile::Binds => "BINDS",
             MetaFile::BindsOptional => "BINDS_OPTIONAL",
             MetaFile::BuildDeps => "BUILD_DEPS",
@@ -184,10 +152,8 @@ impl fmt::Display for MetaFile {
             MetaFile::LdRunPath => "LD_RUN_PATH",
             MetaFile::Manifest => "MANIFEST",
             MetaFile::Path => "PATH",
-            MetaFile::ResolvedServices => "RESOLVED_SERVICES",
             MetaFile::RuntimeEnvironment => "RUNTIME_ENVIRONMENT",
             MetaFile::RuntimePath => "RUNTIME_PATH",
-            MetaFile::Services => "SERVICES",
             MetaFile::SvcGroup => "SVC_GROUP",
             MetaFile::SvcUser => "SVC_USER",
             MetaFile::Target => "TARGET",
@@ -232,17 +198,10 @@ fn existing_metafile<P: AsRef<Path>>(installed_path: P, file: MetaFile) -> Optio
 
 pub enum PackageType {
     Standalone,
-    Composite,
 }
 
 impl fmt::Display for PackageType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let id = match *self {
-            PackageType::Standalone => "Standalone",
-            PackageType::Composite => "Composite",
-        };
-        write!(f, "{}", id)
-    }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "Composite") }
 }
 
 impl FromStr for PackageType {
@@ -251,7 +210,6 @@ impl FromStr for PackageType {
     fn from_str(value: &str) -> Result<Self> {
         match value {
             "standalone" => Ok(PackageType::Standalone),
-            "composite" => Ok(PackageType::Composite),
             _ => Err(Error::InvalidPackageType(value.to_string())),
         }
     }
@@ -363,24 +321,6 @@ port=front-end.port
     }
 
     #[test]
-    fn can_parse_a_valid_bind_mapping() {
-        let input = "my_bind:core/test";
-
-        let output: BindMapping = input.parse().unwrap();
-
-        assert_eq!(output.bind_name, "my_bind");
-        assert_eq!(output.satisfying_service,
-                   PackageIdent::from_str("core/test").unwrap());
-    }
-
-    #[test]
-    fn fails_to_parse_a_bind_mapping_with_an_invalid_service_identifier() {
-        let input = "my_bind:this-is-a-bad-identifier";
-        let output = input.parse::<BindMapping>();
-        assert!(output.is_err());
-    }
-
-    #[test]
     fn can_read_metafile() {
         let pkg_root = Builder::new().prefix("pkg-root").tempdir().unwrap();
         let install_dir = pkg_root.path();
@@ -388,18 +328,18 @@ port=front-end.port
         let expected = "core/foo=db:core/database";
         write_metafile(install_dir, MetaFile::Binds, expected);
 
-        let bind_map = read_metafile(install_dir, MetaFile::Binds).unwrap();
+        let binds = read_metafile(install_dir, MetaFile::Binds).unwrap();
 
-        assert_eq!(expected, bind_map);
+        assert_eq!(expected, binds);
     }
 
     #[test]
     fn reading_a_non_existing_metafile_is_an_error() {
         let pkg_root = Builder::new().prefix("pkg-root").tempdir().unwrap();
         let install_dir = pkg_root.path();
-        let bind_map = read_metafile(install_dir, MetaFile::Binds);
+        let binds = read_metafile(install_dir, MetaFile::Binds);
 
-        assert!(bind_map.is_err());
+        assert!(binds.is_err());
     }
 
 }
