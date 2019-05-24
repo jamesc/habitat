@@ -130,7 +130,6 @@ pub enum MetaFile {
     SvcUser,
     Target,
     TDeps,
-    Type,
 }
 
 impl fmt::Display for MetaFile {
@@ -158,7 +157,6 @@ impl fmt::Display for MetaFile {
             MetaFile::SvcUser => "SVC_USER",
             MetaFile::Target => "TARGET",
             MetaFile::TDeps => "TDEPS",
-            MetaFile::Type => "TYPE",
         };
         write!(f, "{}", id)
     }
@@ -193,25 +191,6 @@ fn existing_metafile<P: AsRef<Path>>(installed_path: P, file: MetaFile) -> Optio
     match std::fs::metadata(&filepath) {
         Ok(_) => Some(filepath),
         Err(_) => None,
-    }
-}
-
-pub enum PackageType {
-    Standalone,
-}
-
-impl fmt::Display for PackageType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "Composite") }
-}
-
-impl FromStr for PackageType {
-    type Err = Error;
-
-    fn from_str(value: &str) -> Result<Self> {
-        match value {
-            "standalone" => Ok(PackageType::Standalone),
-            _ => Err(Error::InvalidPackageType(value.to_string())),
-        }
     }
 }
 

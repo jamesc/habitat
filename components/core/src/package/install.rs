@@ -2,8 +2,7 @@ use super::{list::package_list_for_ident,
             metadata::{parse_key_value,
                        read_metafile,
                        Bind,
-                       MetaFile,
-                       PackageType},
+                       MetaFile},
             Identifiable,
             PackageIdent};
 use crate::{error::{Error,
@@ -198,15 +197,6 @@ impl PackageInstall {
         // package's hooks directory or directly in the package prefix.
         self.installed_path.join("hooks").join("run").is_file()
         || self.installed_path.join("run").is_file()
-    }
-
-    /// Determine what kind of package this is.
-    pub fn pkg_type(&self) -> Result<PackageType> {
-        match self.read_metafile(MetaFile::Type) {
-            Ok(body) => body.parse(),
-            Err(Error::MetaFileNotFound(MetaFile::Type)) => Ok(PackageType::Standalone),
-            Err(e) => Err(e),
-        }
     }
 
     /// Constructs and returns a `HashMap` of environment variable/value key pairs of all

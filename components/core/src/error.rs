@@ -87,8 +87,6 @@ pub enum Error {
     InvalidPackageIdent(String),
     /// Occurs when a package target string cannot be successfully parsed.
     InvalidPackageTarget(String),
-    /// Occurs when a package type is not recognized.
-    InvalidPackageType(String),
     /// Occurs when a service group string cannot be successfully parsed.
     InvalidServiceGroup(String),
     /// Occurs when an origin is in an invalid format
@@ -268,7 +266,6 @@ impl fmt::Display for Error {
                          architecture-platform (example: x86_64-linux)",
                         e)
             }
-            Error::InvalidPackageType(ref e) => format!("Invalid package type: {}.", e),
             Error::InvalidServiceGroup(ref e) => {
                 format!("Invalid service group: {}. A valid service group string is in the form \
                          service.group (example: redis.production)",
@@ -429,7 +426,6 @@ impl error::Error for Error {
             Error::InvalidPackageTarget(_) => {
                 "Package targets must be in architecture-platform format (example: x86_64-linux)"
             }
-            Error::InvalidPackageType(_) => "Unsupported package type supplied.",
             Error::InvalidServiceGroup(_) => {
                 "Service group strings must be in service.group[@organization] format (example: \
                  redis.production or foo.default@bazcorp)"
